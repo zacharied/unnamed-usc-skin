@@ -5,6 +5,7 @@
     "Lua.diagnostics.globals": [
         "gfx",
         "songwheel",
-        "game"
+        "game",
+        "Menu"
     ]
 }

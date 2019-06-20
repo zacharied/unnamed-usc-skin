@@ -19,6 +19,7 @@ Sgfx = {
     DrawLabel = function(l, x, y) return gfx.DrawLabel(l, scalex(x), scaley(y)) end,
     MoveTo = function(x, y) return gfx.MoveTo(scalex(x), scaley(y)) end,
     LineTo = function(x, y) return gfx.LineTo(scalex(x), scaley(y)) end,
+    Circle = function(cx, cy, r) return gfx.Circle(scalex(cx), scaley(cy), scalex(r)) end,
     LabelSize = function(l)
         local w, h = gfx.LabelSize(l)
         return rscalex(w), rscaley(h)

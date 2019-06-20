@@ -19,6 +19,7 @@ local SONGINFO_HEIGHT = 350
 local grid_idx = 1 
 -- Index of currently highlighted song.
 local selected_idx = 1
+local diff_idx = 1
 
 local jackets = {}
 
@@ -47,8 +48,14 @@ SonginfoWidget = {
     HPADDING = 50,
     VPADDING = 50,
     JACKET_SZ = 275,
-    LABEL_VSPACING = 40,
+    LABEL_VSPACING = 18,
+    DIFF_COUNT = 5,
+    RADIUS_BOOST = 10,
     x = 20, y = 20,
+
+    get_height = function(self)
+        return self.JACKET_SZ + self.VPADDING * 2
+    end
 }
 
 gfx.LoadSkinFont("NotoSans-BoldItalic.ttf")
@@ -90,8 +97,23 @@ function SonginfoWidget:draw()
     Sgfx.Text(song.artist, meta_x, y_artist)
     Sgfx.Text(song.difficulties[1].effector, meta_x, y_effector) -- TODO Show correct effector
 
-    -- Difficulties
-
+    --- Difficulties
+    -- Difficulties are laid out in a 5x1 grid below the metadata.
+    gfx.FontSize(25)
+    local diff_v_space = self:get_height() - (y_effector + labelh - self.y)
+    local diff_y = y_effector + labelh + diff_v_space / 2
+    local diff_h_space = Sgfx.WIDTH - (self.x * 2 + self.JACKET_SZ + self.HPADDING * 3)
+    local diff_start_x = self.x + self.JACKET_SZ + self.HPADDING + diff_h_space / self.DIFF_COUNT -- x of the first shown diff
+    gfx.TextAlign(gfx.TEXT_ALIGN_CENTER + gfx.TEXT_ALIGN_MIDDLE)
+    for i, diff in ipairs(song.difficulties) do
+        Sgfx.Text(diff.level, diff_start_x + diff_h_space * ((i-1) / self.DIFF_COUNT), diff_y)
+    end
+    -- Highlight selected diff.
+    gfx.BeginPath()
+    local _, diff_text_ymin, _, diff_text_ymax = gfx.TextBounds(0, 0, "55") -- I'm guessing levels won't go this high...
+    gfx.StrokeColor(255, 255, 255)
+    Sgfx.Circle(diff_start_x + diff_h_space * ((diff_idx-1) / self.DIFF_COUNT), diff_y, diff_text_ymax - diff_text_ymin + self.RADIUS_BOOST)
+    gfx.Stroke()
 end
 
 -- Draws grid centered horizontally on scren.
@@ -128,7 +150,6 @@ grid_coords = function()
 end
 
 update_grid_idx = function(increment)
-    -- TODO Make it work for increments other than 1 or -1.
     if increment > 0 then
         if increment == 1 then
             grid_idx = grid_idx + 1
@@ -147,7 +168,7 @@ update_grid_idx = function(increment)
                 grid_idx = 3
             end
         else
-            for _i = increment, -1, 1 do
+            for _ = increment, -1, 1 do
                 update_grid_idx(-1)
             end
         end
@@ -171,7 +192,7 @@ set_index = function(new_idx)
 end
 
 set_diff = function(new_diff)
-    return 0
+    diff_idx = new_diff
 end
 
 local needs_init = true
