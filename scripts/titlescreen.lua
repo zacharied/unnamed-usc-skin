@@ -28,9 +28,10 @@ local logo_label = nil
 -- Calculate the rectangle of a main button given its index.
 -- This assumes all main buttons are the same height.
 button_bounds = function(idx)
-    width, height = gfx.LabelSize(main_buttons[idx].label)
-    x = WIN_WIDTH / 2 - width / 2
-    y = MAIN_BUTTON_VOFFSET + (height + MAIN_BUTTON_VSPACING) * idx
+    local width, height = Sgfx.LabelSize(main_buttons[idx].label)
+    local _, logo_height = Sgfx.LabelSize(logo_label)
+    local x = Sgfx.WIDTH / 2 - width / 2
+    local y = LOGO_TOP_OFFSET + logo_height + MAIN_BUTTON_VOFFSET + (height + MAIN_BUTTON_VSPACING) * idx
     return x, y, width, height
 end
 
@@ -44,7 +45,7 @@ end
 -- Check whether the mouse is within the rectangle.
 mouse_intersects = function(x, y, w, h)
     mposx, mposy = game.GetMousePos()
-    return mposx > x and mposy > y and mposx < x+w and mposy < y+h;
+    return mposx > scalex(x) and mposy > scaley(y) and mposx < scalex(x+w) and mposy < scaley(y+h);
 end
 
 draw_logo = function()
@@ -53,29 +54,31 @@ draw_logo = function()
         logo_label = gfx.CreateLabel("UUSCS", LOGO_FONT_SZ, 0)
     end
 
+    gfx.TextAlign(gfx.TEXT_ALIGN_CENTER + gfx.TEXT_ALIGN_MIDDLE)
     width, height = gfx.LabelSize(logo_label)
     gfx.FillColor(255, 255, 255)
-    gfx.DrawLabel(logo_label, WIN_WIDTH / 2 - width / 2, 0)
+    Sgfx.DrawLabel(logo_label, Sgfx.WIDTH / 2, LOGO_TOP_OFFSET)
 end
 
 -- Draw a button centered horizontally.
 draw_button = function(idx, btn)
-    x, y, width, height = button_bounds(idx)
+    local x, y, width, height = button_bounds(idx)
 
-    if mouse_intersects(x, y, width, height) then
+    gfx.TextAlign(gfx.TEXT_ALIGN_LEFT, gfx.TEXT_ALIGN_TOP)
+    if mouse_intersects_scaled(x, y, width, height) then
         -- Hover state.
         gfx.FillColor(table.unpack(COLOR_MAIN_BUTTON_HOVER))
-        gfx.DrawLabel(main_buttons[idx].label, x, y)
+        Sgfx.DrawLabel(main_buttons[idx].label, x, y)
 
         gfx.BeginPath()
-        gfx.MoveTo(x + 10, y + height)
-        gfx.LineTo(x + width - 10, y + height)
+        Sgfx.MoveTo(x + 10, y + height)
+        Sgfx.LineTo(x + width - 10, y + height)
         gfx.StrokeColor(table.unpack(COLOR_MAIN_BUTTON_HOVER))
         gfx.Stroke()
     else
         -- Inactive state.
         gfx.FillColor(table.unpack(COLOR_MAIN_BUTTON_INACTIVE))
-        gfx.DrawLabel(main_buttons[idx].label, x, y)
+        Sgfx.DrawLabel(main_buttons[idx].label, x, y)
     end
 end
 
@@ -93,13 +96,15 @@ render = function(deltaTime)
     for i, btn in ipairs(main_buttons) do
         draw_button(i, btn)
     end
+
+    Util.draw_debug()
 end
 
 -- Callback on mouse presses.
 mouse_pressed = function(button)
     for i = 1, # main_buttons do
         local x, y, w, h = button_bounds(i)
-        if mouse_intersects(x, y, w, h) then
+        if mouse_intersects_scaled(x, y, w, h) then
             main_buttons[i].action()
             Qlog.i("Button " .. i .. " clicked.")
             return 0
