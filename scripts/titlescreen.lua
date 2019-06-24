@@ -44,8 +44,8 @@ end
 
 -- Check whether the mouse is within the rectangle.
 mouse_intersects = function(x, y, w, h)
-    mposx, mposy = game.GetMousePos()
-    return mposx > scalex(x) and mposy > scaley(y) and mposx < scalex(x+w) and mposy < scaley(y+h);
+    local mposx, mposy = Sgfx.scale(table.unpack(game.GetMousePos()), true)
+    return mposx > x and mposy > y and mposx < x+w and mposy < y+h;
 end
 
 draw_logo = function()
@@ -65,7 +65,7 @@ draw_button = function(idx, btn)
     local x, y, width, height = button_bounds(idx)
 
     gfx.TextAlign(gfx.TEXT_ALIGN_LEFT, gfx.TEXT_ALIGN_TOP)
-    if mouse_intersects_scaled(x, y, width, height) then
+    if mouse_intersects(x, y, width, height) then
         -- Hover state.
         gfx.FillColor(table.unpack(COLOR_MAIN_BUTTON_HOVER))
         Sgfx.DrawLabel(main_buttons[idx].label, x, y)
@@ -104,7 +104,7 @@ end
 mouse_pressed = function(button)
     for i = 1, # main_buttons do
         local x, y, w, h = button_bounds(i)
-        if mouse_intersects_scaled(x, y, w, h) then
+        if mouse_intersects(x, y, w, h) then
             main_buttons[i].action()
             Qlog.i("Button " .. i .. " clicked.")
             return 0
