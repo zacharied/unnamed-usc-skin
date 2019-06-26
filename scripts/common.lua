@@ -1,46 +1,41 @@
 gfx.LoadSkinFont("NotoSans-Regular.ttf");
 
--- Quick log.
+_unimplemented = function(funcname) Log.e("Call to unimplemented method `" .. funcname .. "`!") end
+
+function point_is_in(px, py, x, y, w, h)
+    return (px > x and px < x + w) and (py > y and py < y + h)
+end
+
+-- Shorthand for calling log functions.
 Log = {
-    i = function(text) game.Log(text, game.LOGGER_INFO) end,
-    n = function(text) game.Log(text, game.LOGGER_NORMAL) end,
-    w = function(text) game.Log(text, game.LOGGER_WARNING) end,
-    e = function(text) game.Log(text, game.LOGGER_ERROR) end
+    info = function(text) game.Log(text, game.LOGGER_INFO) end,
+    normal = function(text) game.Log(text, game.LOGGER_NORMAL) end,
+    warning = function(text) game.Log(text, game.LOGGER_WARNING) end,
+    error = function(text) game.Log(text, game.LOGGER_ERROR) end,
 }
 
 -- Scaled graphics.
 Sgfx = {
+    -- All scaling is performed with respect to a 1080x1920 screen.
+    WIDTH = 1080, HEIGHT = 1920,
+
     scale_x = function(x, reverse)
         reverse = false or reverse
         local w, _ = game.GetResolution()
-        if reverse then
-            return x * (1 / (w / Sgfx.WIDTH))
-        else
-            return x * (w / Sgfx.WIDTH)
-        end
+        return x * (reverse and (1 / (w / Sgfx.WIDTH)) or (w / Sgfx.WIDTH))
     end,
 
     scale_y = function(y, reverse)
         reverse = false or reverse
         local _, h = game.GetResolution()
-        if reverse then
-            return y * (1 / (h / Sgfx.HEIGHT))
-        else
-            return y * (h / Sgfx.HEIGHT)
-        end
+        return y * (reverse and (1 / (h / Sgfx.HEIGHT)) or (h / Sgfx.HEIGHT))
     end,
 
     scale = function(x, y, reverse)
         reverse = false or reverse
-        if reverse then
-            return Sgfx.scale_x(x, true), Sgfx.scale_y(y, true)
-        else
-            return Sgfx.scale_x(x), Sgfx.scale_y(y)
-        end
+        return Sgfx.scale_x(x, reverse), Sgfx.scale_y(y, reverse)
     end,
 
-    WIDTH = 1080, HEIGHT = 1920,
-    Resolution = function() return 1080, 1920 end,
     Rect = function(x, y, w, h) return gfx.Rect(Sgfx.scale_x(x), Sgfx.scale_y(y), Sgfx.scale_x(w), Sgfx.scale_y(h)) end,
     ImageRect = function(x, y, w, h, img, alpha, angle) return gfx.ImageRect(Sgfx.scale_x(x), Sgfx.scale_y(y), Sgfx.scale_x(w), Sgfx.scale_y(h), img, alpha, angle) end,
     Text = function(s, x, y) return gfx.Text(s, Sgfx.scale_x(x), Sgfx.scale_y(y)) end,
@@ -52,5 +47,162 @@ Sgfx = {
     LabelSize = function(l)
         local w, h = gfx.LabelSize(l)
         return Sgfx.scale_x(w, true), Sgfx.scale_y(h, true)
+    end,
+
+    -- Not a native gfx method, but here for convenience.
+    GetMousePos = function()
+        mx, my = game.GetMousePos()
+        return Sgfx.scale(mx, my, true)
+    end
+}
+
+-- A Widget is a collection of data that can be drawn. New widgets can be created by extending this class.
+-- The following methods MUST be implemented by the child widget:
+--   * get_bounds
+--   * draw
+-- The following methods MAY be implemented by the child widget:
+--   * get_pos
+--   * check_mouse
+-- The remainder of the methods should not be modified.
+Widget = {
+    MOUSE_CHECK = false,
+    action = nil,
+    x = 0, y = 0, 
+
+    new = function(self, o)
+        o = o or {}
+        setmetatable(o, self)
+        self.__index = self
+        return o
+    end,
+
+    -- Check if the mouse is inside the widget's bounding box.
+    check_mouse = function(self)
+        local mx, my = Sgfx.GetMousePos()
+        local x, y = self:get_pos()
+        local w, h = self:get_bounds()
+        return point_is_in(mx, my, x, y, w, h)
+    end,
+
+    draw = function(self)
+        _unimplemented("draw")
+    end,
+
+    with_pos = function(self, o)
+        self.x = o.x or self.x
+        self.y = o.y or self.y
+        return self
+    end,
+
+    with_action = function(self, action)
+        self.MOUSE_CHECK = true
+        self.action = action
+        return self
+    end,
+
+    -- Get the top-left coordinate of the widget's bounding box.
+    get_pos = function(self)
+        return self.x, self.y
+    end,
+
+    get_x = function(self)
+        local x, _ = self:get_pos()
+        return x 
+    end,
+
+    get_y = function(self)
+        local _, y = self:get_pos()
+        return y 
+    end,
+
+    -- Get the dimensions of the widget's bounding box.
+    get_bounds = function(self)
+        _unimplemented("get_bounds")
+        return 0, 0
+    end,
+
+    get_width = function(self)
+        w, _ = self:get_bounds()
+        return w
+    end,
+
+    get_height = function(self)
+        _, h = self:get_bounds()
+        return h
+    end,
+
+    -- Get the far x-side of the object.
+    next_x = function(self)
+        return self.x + self:get_width()
+    end,
+
+    -- Get the far y-side of the object.
+    next_y = function(self)
+        return self.y + self:get_height()
+    end,
+}
+
+Image = Widget:new{
+    width = 0, height = 0,
+    image = nil,
+
+    with_size = function(self, w, h)
+        self.width = w
+        self.height = h
+        return self
+    end,
+
+    with_image = function(self, path)
+        self.image = gfx.CreateImage(path, 0)
+        return self
+    end,
+
+    -- !override
+    get_bounds = function(self)
+        return self.width, self.height
+    end,
+
+    -- !override
+    draw = function(self)
+        Sgfx.ImageRect(self.x, self.y, self.width, self.height, self.image, 1, 0)
+    end,
+}
+
+-- Text on the screen.
+TextLabel = Widget:new{ 
+    label = nil, hcenter = false, vcenter = false, font_size = 20,
+
+    finish_with_text = function(self, text)
+        self.label = gfx.CreateLabel(text, self.font_size, 0)
+        return self
+    end,
+
+    with_font_size = function(self, size)
+        self.font_size = size
+        return self
+    end, 
+
+    with_centering = function(self, h, v)
+        self.hcenter = h
+        self.vcenter = v
+        return self
+    end,
+
+    -- !override
+    get_pos = function(self)
+        return (self.hcenter and self.x - self:get_width() / 2 or self.x),
+                  (self.vcenter and self.y - self:get_height() / 2 or self.y)
+    end,
+
+    -- !override
+    get_bounds = function(self)
+        return Sgfx.LabelSize(self.label)
+    end,
+
+    -- !override
+    draw = function(self)
+        gfx.TextAlign((self.hcenter and gfx.TEXT_ALIGN_CENTER or gfx.TEXT_ALIGN_LEFT)
+                        + (self.vcenter and gfx.TEXT_ALIGN_MIDDLE or gfx.TEXT_ALIGN_TOP))
+        Sgfx.DrawLabel(self.label, self.x, self.y)
     end
 }
