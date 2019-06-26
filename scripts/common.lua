@@ -115,6 +115,34 @@ Widget = {
         return y 
     end,
 
+    -- Position below another widget.
+    as_below = function(self, other, spacing)
+        spacing = spacing or 0
+        self.y = other:next_y() + spacing
+        return self
+    end,
+
+    -- Position above another widget.
+    as_above = function(self, other, spacing)
+        spacing = spacing or 0
+        self.y = other:get_y() - other:get_height() - spacing
+        return self
+    end,
+
+    -- Position to the right of another widget.
+    as_right_of = function(self, other, spacing)
+        spacing = spacing or 0
+        self.x = other:next_x() + spacing
+        return self
+    end,
+
+    -- Position to left of another widget.
+    as_left_of = function(self, other, spacing)
+        spacing = spacing or 0
+        self.x = other:get_x() - other:get_width() - spacing
+        return self
+    end,
+
     -- Get the dimensions of the widget's bounding box.
     get_bounds = function(self)
         _unimplemented("get_bounds")
@@ -170,7 +198,7 @@ Image = Widget:new{
 
 -- Text on the screen.
 TextLabel = Widget:new{ 
-    label = nil, hcenter = false, vcenter = false, font_size = 20,
+    label = nil, align = 0, font_size = 20,
 
     finish_with_text = function(self, text)
         self.label = gfx.CreateLabel(text, self.font_size, 0)
@@ -182,16 +210,36 @@ TextLabel = Widget:new{
         return self
     end, 
 
-    with_centering = function(self, h, v)
-        self.hcenter = h
-        self.vcenter = v
+    with_align = function(self, align)
+        self.align = align
         return self
     end,
 
     -- !override
     get_pos = function(self)
-        return (self.hcenter and self.x - self:get_width() / 2 or self.x),
-                  (self.vcenter and self.y - self:get_height() / 2 or self.y)
+        local x
+        if self.align & gfx.TEXT_ALIGN_LEFT ~= 0 then
+            x = self.x
+        elseif self.align & gfx.TEXT_ALIGN_RIGHT ~= 0 then
+            x = self.x - self:get_width()
+        elseif self.align & gfx.TEXT_ALIGN_CENTER ~= 0 then
+            x = self.x - self:get_width() / 2
+        else
+            x = self.x
+        end
+
+        local y
+        if self.align & gfx.TEXT_ALIGN_TOP ~= 0 then
+            y = self.y
+        elseif self.align & gfx.TEXT_ALIGN_BOTTOM ~= 0 then
+            y = self.y - self:get_height()
+        elseif self.align & gfx.TEXT_ALIGN_MIDDLE ~= 0 then
+            y = self.y - self:get_height() / 2
+        else
+            y = self.y
+        end
+        
+        return x, y
     end,
 
     -- !override
@@ -201,8 +249,7 @@ TextLabel = Widget:new{
 
     -- !override
     draw = function(self)
-        gfx.TextAlign((self.hcenter and gfx.TEXT_ALIGN_CENTER or gfx.TEXT_ALIGN_LEFT)
-                        + (self.vcenter and gfx.TEXT_ALIGN_MIDDLE or gfx.TEXT_ALIGN_TOP))
+        gfx.TextAlign(self.align)
         Sgfx.DrawLabel(self.label, self.x, self.y)
     end
 }

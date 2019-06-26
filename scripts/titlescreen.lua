@@ -22,23 +22,23 @@ MenuAction = {
 
 local widgets = {
     title = TextLabel:new()
-                :with_centering(true, false)
+                :with_align(gfx.TEXT_ALIGN_CENTER)
                 :with_font_size(40)
                 :finish_with_text("UUSCS"),
 
     btn1 = TextLabel:new()
                 :with_action(MenuAction.Start)
-                :with_centering(true, false)
+                :with_align(gfx.TEXT_ALIGN_CENTER)
                 :finish_with_text("Start"),
     
     btn2 = TextLabel:new()
                 :with_action(MenuAction.Settings)
-                :with_centering(true, false)
+                :with_align(gfx.TEXT_ALIGN_CENTER)
                 :finish_with_text("Settings"),
     
     btn3 = TextLabel:new()
                 :with_action(MenuAction.Exit)
-                :with_centering(true, false)
+                :with_align(gfx.TEXT_ALIGN_CENTER)
                 :finish_with_text("Exit"),
 }
 
